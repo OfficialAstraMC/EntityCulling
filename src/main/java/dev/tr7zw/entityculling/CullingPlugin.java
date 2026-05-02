@@ -14,9 +14,8 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRotation;
 
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 

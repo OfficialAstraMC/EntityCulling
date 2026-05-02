@@ -140,36 +140,34 @@ public class BlockChangeListener implements Listener {
 	private BlockState[] filterTiles(BlockState[] tiles) {
 		if (tiles.length == 0)
 			return tiles;
-		List<BlockState> list = new ArrayList(Arrays.asList(tiles)); // the arrays as list is not modifyable
-		ListIterator<BlockState> it = list.listIterator();
-		while (it.hasNext()) {
-			BlockState state = it.next();
-			if (!(state instanceof Chest || state instanceof Shulker || state instanceof CreatureSpawner
-					|| state instanceof EnchantingTable || state instanceof Banner || state instanceof Skull)) {
-				it.remove();
-			}
-		}
+		List<BlockState> list = new ArrayList<>(Arrays.asList(tiles)); // the arrays as list is not modifiable
+        list.removeIf(state -> !(state instanceof Chest
+				|| state instanceof Shulker
+				|| state instanceof CreatureSpawner
+                || state instanceof EnchantingTable
+				|| state instanceof Banner
+				|| state instanceof Skull));
 		return list.toArray(new BlockState[0]);
 	}
 
 	public void updateCachedChunkEntitiesSync(final ChunkCoords cc, final Chunk chunk) {
 		if (chunk == null) {
 			try {
-				writeLock.lock();
-				cachedChunkSnapshots.remove(cc);
-				cachedChunkTiles.remove(cc);
-				cachedChunkEntities.remove(cc);
+				this.writeLock.lock();
+				this.cachedChunkSnapshots.remove(cc);
+				this.cachedChunkTiles.remove(cc);
+				this.cachedChunkEntities.remove(cc);
 				return;
 			} finally {
-				writeLock.unlock();
+				this.writeLock.unlock();
 			}
 		}
 		CullingPlugin.runTask(() -> {
             try {
-                writeLock.lock();
-                cachedChunkEntities.put(cc, chunk.getEntities());
+				this.writeLock.lock();
+				this.cachedChunkEntities.put(cc, chunk.getEntities());
             } finally {
-                writeLock.unlock();
+				this.writeLock.unlock();
             }
         });
 	}
@@ -187,12 +185,12 @@ public class BlockChangeListener implements Listener {
 
 	public boolean isInLoadedChunk(ChunkCoords cc) {
 		try {
-			readLock.lock();
-			return cachedChunkSnapshots.containsKey(cc);
-		} catch (Exception exception) {
-			exception.printStackTrace();
+			this.readLock.lock();
+			return this.cachedChunkSnapshots.containsKey(cc);
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		} finally {
-			readLock.unlock();
+			this.readLock.unlock();
 		}
 		return false;
 	}
@@ -204,10 +202,10 @@ public class BlockChangeListener implements Listener {
 
 	public ChunkSnapshot getChunk(ChunkCoords cc) {
 		try {
-			readLock.lock();
-			return cachedChunkSnapshots.get(cc);
+			this.readLock.lock();
+			return this.cachedChunkSnapshots.get(cc);
 		} finally {
-			readLock.unlock();
+			this.readLock.unlock();
 		}
 	}
 
@@ -218,10 +216,10 @@ public class BlockChangeListener implements Listener {
 
 	public BlockState[] getChunkTiles(ChunkCoords cc) {
 		try {
-			readLock.lock();
-			return cachedChunkTiles.get(cc);
+			this.readLock.lock();
+			return this.cachedChunkTiles.get(cc);
 		} finally {
-			readLock.unlock();
+			this.readLock.unlock();
 		}
 	}
 
@@ -232,10 +230,10 @@ public class BlockChangeListener implements Listener {
 
 	public Entity[] getChunkEntities(ChunkCoords cc) {
 		try {
-			readLock.lock();
-			return cachedChunkEntities.get(cc);
+			this.readLock.lock();
+			return this.cachedChunkEntities.get(cc);
 		} finally {
-			readLock.unlock();
+			this.readLock.unlock();
 		}
 	}
 
@@ -269,23 +267,19 @@ public class BlockChangeListener implements Listener {
 			if (getClass() != obj.getClass())
 				return false;
 			ChunkCoords other = (ChunkCoords) obj;
-			if (chunkX != other.chunkX)
+			if (this.chunkX != other.chunkX)
 				return false;
-			if (chunkZ != other.chunkZ)
+			if (this.chunkZ != other.chunkZ)
 				return false;
-			if (worldName == null) {
-				if (other.worldName != null)
-					return false;
-			} else if (!worldName.equals(other.worldName))
-				return false;
-			return true;
-		}
+			if (this.worldName == null) {
+                return other.worldName == null;
+			}
+			return this.worldName.equals(other.worldName);
+        }
 
 		public Chunk getRealChunkSync() {
-			World world = Bukkit.getWorld(worldName);
-			return world.getChunkAt(chunkX, chunkZ);
+			World world = Bukkit.getWorld(this.worldName);
+			return world.getChunkAt(this.chunkX, this.chunkZ);
 		}
-
 	}
-
 }
