@@ -1,16 +1,7 @@
 package dev.tr7zw.entityculling.occlusionculling;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -41,12 +32,9 @@ import dev.tr7zw.entityculling.CullingPlugin;
 
 public class BlockChangeListener implements Listener {
 
-	public final Map<ChunkCoords, ChunkSnapshot> cachedChunkSnapshots = new HashMap<>();
-	public final Map<ChunkCoords, BlockState[]> cachedChunkTiles = new HashMap<>();
-	public final Map<ChunkCoords, Entity[]> cachedChunkEntities = new HashMap<>();
-	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-	private final WriteLock writeLock = lock.writeLock();
-	private final ReadLock readLock = lock.readLock();
+	public final Map<ChunkCoords, ChunkSnapshot> cachedChunkSnapshots = new ConcurrentHashMap<>();
+	public final Map<ChunkCoords, BlockState[]> cachedChunkTiles = new ConcurrentHashMap<>();
+	public final Map<ChunkCoords, Entity[]> cachedChunkEntities = new ConcurrentHashMap<>();
 
 	public BlockChangeListener() {
 		for (World world : Bukkit.getWorlds()) {
@@ -113,38 +101,27 @@ public class BlockChangeListener implements Listener {
 	}
 
 	public void updateCachedChunkSync(final ChunkCoords cc, final Chunk chunk) {
-
 		if (chunk == null) {
-			try {
-				writeLock.lock();
-				cachedChunkSnapshots.remove(cc);
-				cachedChunkTiles.remove(cc);
-				cachedChunkEntities.remove(cc);
-				return;
-			} finally {
-				writeLock.unlock();
-			}
+			cachedChunkSnapshots.remove(cc);
+			cachedChunkTiles.remove(cc);
+			cachedChunkEntities.remove(cc);
+			return;
 		}
 		CullingPlugin.runTask(() -> {
-            try {
-                writeLock.lock();
-                cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
-                cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
-                cachedChunkEntities.put(cc, chunk.getEntities());
-            } finally {
-                writeLock.unlock();
-            }
-        });
+			cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
+			cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
+			cachedChunkEntities.put(cc, chunk.getEntities());
+		});
 	}
 
 	private BlockState[] filterTiles(BlockState[] tiles) {
 		if (tiles.length == 0)
 			return tiles;
 		List<BlockState> list = new ArrayList<>(Arrays.asList(tiles)); // the arrays as list is not modifiable
-        list.removeIf(state -> !(state instanceof Chest
+		list.removeIf(state -> !(state instanceof Chest
 				|| state instanceof Shulker
 				|| state instanceof CreatureSpawner
-                || state instanceof EnchantingTable
+				|| state instanceof EnchantingTable
 				|| state instanceof Banner
 				|| state instanceof Skull));
 		return list.toArray(new BlockState[0]);
@@ -152,24 +129,14 @@ public class BlockChangeListener implements Listener {
 
 	public void updateCachedChunkEntitiesSync(final ChunkCoords cc, final Chunk chunk) {
 		if (chunk == null) {
-			try {
-				this.writeLock.lock();
-				this.cachedChunkSnapshots.remove(cc);
-				this.cachedChunkTiles.remove(cc);
-				this.cachedChunkEntities.remove(cc);
-				return;
-			} finally {
-				this.writeLock.unlock();
-			}
+			this.cachedChunkSnapshots.remove(cc);
+			this.cachedChunkTiles.remove(cc);
+			this.cachedChunkEntities.remove(cc);
+			return;
 		}
 		CullingPlugin.runTask(() -> {
-            try {
-				this.writeLock.lock();
-				this.cachedChunkEntities.put(cc, chunk.getEntities());
-            } finally {
-				this.writeLock.unlock();
-            }
-        });
+			this.cachedChunkEntities.put(cc, chunk.getEntities());
+		});
 	}
 
 	public ChunkCoords getChunkCoords(Location loc) {
@@ -184,15 +151,7 @@ public class BlockChangeListener implements Listener {
 	}
 
 	public boolean isInLoadedChunk(ChunkCoords cc) {
-		try {
-			this.readLock.lock();
-			return this.cachedChunkSnapshots.containsKey(cc);
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			this.readLock.unlock();
-		}
-		return false;
+		return this.cachedChunkSnapshots.containsKey(cc);
 	}
 
 	@Deprecated
@@ -201,12 +160,7 @@ public class BlockChangeListener implements Listener {
 	}
 
 	public ChunkSnapshot getChunk(ChunkCoords cc) {
-		try {
-			this.readLock.lock();
-			return this.cachedChunkSnapshots.get(cc);
-		} finally {
-			this.readLock.unlock();
-		}
+		return this.cachedChunkSnapshots.get(cc);
 	}
 
 	@Deprecated
@@ -215,12 +169,7 @@ public class BlockChangeListener implements Listener {
 	}
 
 	public BlockState[] getChunkTiles(ChunkCoords cc) {
-		try {
-			this.readLock.lock();
-			return this.cachedChunkTiles.get(cc);
-		} finally {
-			this.readLock.unlock();
-		}
+		return this.cachedChunkTiles.get(cc);
 	}
 
 	@Deprecated
@@ -229,12 +178,7 @@ public class BlockChangeListener implements Listener {
 	}
 
 	public Entity[] getChunkEntities(ChunkCoords cc) {
-		try {
-			this.readLock.lock();
-			return this.cachedChunkEntities.get(cc);
-		} finally {
-			this.readLock.unlock();
-		}
+		return this.cachedChunkEntities.get(cc);
 	}
 
 	public static class ChunkCoords {
@@ -272,10 +216,10 @@ public class BlockChangeListener implements Listener {
 			if (this.chunkZ != other.chunkZ)
 				return false;
 			if (this.worldName == null) {
-                return other.worldName == null;
+				return other.worldName == null;
 			}
 			return this.worldName.equals(other.worldName);
-        }
+		}
 
 		public Chunk getRealChunkSync() {
 			World world = Bukkit.getWorld(this.worldName);
