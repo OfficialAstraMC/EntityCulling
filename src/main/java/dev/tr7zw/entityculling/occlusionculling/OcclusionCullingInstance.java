@@ -1,91 +1,90 @@
 package dev.tr7zw.entityculling.occlusionculling;
 
-import java.util.Arrays;
-
+import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener.ChunkCoords;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
-import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener.ChunkCoords;
+import java.util.Arrays;
 
 public class OcclusionCullingInstance {
 
-	private final BlockChangeListener blockChangeListener;
+    private final BlockChangeListener blockChangeListener;
 
     public OcclusionCullingInstance(BlockChangeListener blockChangeListener) {
         this.blockChangeListener = blockChangeListener;
     }
 
     private Vector getBoundingBoxMiddle(BoundingBox bb, Location blockLoc) {
-		return new Vector(
-				bb.getMinX() + (bb.getMaxX() - bb.getMinX()) / 2d,
-				bb.getMinY() + (bb.getMaxY() - bb.getMinY()) / 2d,
-				bb.getMinZ() + (bb.getMaxZ() - bb.getMinZ()) / 2d
-		).add(blockLoc.toVector());
-	}
+        return new Vector(
+                bb.getMinX() + (bb.getMaxX() - bb.getMinX()) / 2d,
+                bb.getMinY() + (bb.getMaxY() - bb.getMinY()) / 2d,
+                bb.getMinZ() + (bb.getMaxZ() - bb.getMinZ()) / 2d
+        ).add(blockLoc.toVector());
+    }
 
-	public boolean isBoundingBoxVisible(Location bbLocation, BoundingBox bb, Location playerLoc, boolean entity) {
-		try {
-			double width = bb.getWidthX();
-			double height = bb.getHeight();
-			double depth = bb.getWidthZ();
-			Location center = entity
-					? bbLocation.clone().add(0, height/2, 0)
-					: this.getBoundingBoxMiddle(bb, bbLocation).toLocation(bbLocation.getWorld());
-			Location centerXMin = center.clone().add(-width / 2, 0, 0);
-			Location centerXMax = center.clone().add(width / 2, 0, 0);
-			Location centerYMin = center.clone().add(0, -height / 2, 0);
-			Location centerYMax = center.clone().add(0, height / 2, 0);
-			Location centerZMin = center.clone().add(0, 0, -depth / 2);
-			Location centerZMax = center.clone().add(0, 0, depth / 2);
-			Vector[] targets = new Vector[4];
-			targets[0] = centerYMin.subtract(playerLoc).toVector();
-			targets[1] = centerYMax.subtract(playerLoc).toVector();
-		
-			if(centerXMin.distanceSquared(playerLoc) > centerXMax.distanceSquared(playerLoc)) {
-				targets[2] = centerXMin.subtract(playerLoc).toVector();
-			}else {
-				targets[2] = centerXMax.subtract(playerLoc).toVector();
-			}
-			if(centerZMin.distanceSquared(playerLoc) > centerZMax.distanceSquared(playerLoc)) {
-				targets[3] = centerZMin.subtract(playerLoc).toVector();
-			}else {
-				targets[3] = centerZMax.subtract(playerLoc).toVector();
-			}
+    public boolean isBoundingBoxVisible(Location bbLocation, BoundingBox bb, Location playerLoc, boolean entity) {
+        try {
+            double width = bb.getWidthX();
+            double height = bb.getHeight();
+            double depth = bb.getWidthZ();
+            Location center = entity
+                    ? bbLocation.clone().add(0, height / 2, 0)
+                    : this.getBoundingBoxMiddle(bb, bbLocation).toLocation(bbLocation.getWorld());
+            Location centerXMin = center.clone().add(-width / 2, 0, 0);
+            Location centerXMax = center.clone().add(width / 2, 0, 0);
+            Location centerYMin = center.clone().add(0, -height / 2, 0);
+            Location centerYMax = center.clone().add(0, height / 2, 0);
+            Location centerZMin = center.clone().add(0, 0, -depth / 2);
+            Location centerZMax = center.clone().add(0, 0, depth / 2);
+            Vector[] targets = new Vector[4];
+            targets[0] = centerYMin.subtract(playerLoc).toVector();
+            targets[1] = centerYMax.subtract(playerLoc).toVector();
+
+            if (centerXMin.distanceSquared(playerLoc) > centerXMax.distanceSquared(playerLoc)) {
+                targets[2] = centerXMin.subtract(playerLoc).toVector();
+            } else {
+                targets[2] = centerXMax.subtract(playerLoc).toVector();
+            }
+            if (centerZMin.distanceSquared(playerLoc) > centerZMax.distanceSquared(playerLoc)) {
+                targets[3] = centerZMin.subtract(playerLoc).toVector();
+            } else {
+                targets[3] = centerZMax.subtract(playerLoc).toVector();
+            }
             return isVisible(playerLoc, targets);
 
         } catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		return true;
-	}
-	
-	private final int reach = 50;
-	private final byte[] cache = new byte[(reach*2)*(reach*2)*(reach*2)];
-	
-	public void resetCache() {
-		Arrays.fill(cache, (byte)0);
-	}
-	
-	/**
-	 * returns the grid cells that intersect with this vector<br>
-	 * <a href=
-	 * "http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html">http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html</a>
-	 */
-	private boolean isVisible(Location start, Vector[] targets) {
-		int maxX = 0;
-		int maxY = 0;
-		int maxZ = 0;
+            ex.printStackTrace();
+        }
+        return true;
+    }
+
+    private final int reach = 50;
+    private final byte[] cache = new byte[(reach * 2) * (reach * 2) * (reach * 2)];
+
+    public void resetCache() {
+        Arrays.fill(cache, (byte) 0);
+    }
+
+    /**
+     * returns the grid cells that intersect with this vector<br>
+     * <a href=
+     * "http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html">http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html</a>
+     */
+    private boolean isVisible(Location start, Vector[] targets) {
+        int maxX = 0;
+        int maxY = 0;
+        int maxZ = 0;
         for (Vector vector : targets) {
             maxX = Math.max(maxX, Math.abs(vector.getBlockX()));
             maxY = Math.max(maxY, Math.abs(vector.getBlockY()));
             maxZ = Math.max(maxZ, Math.abs(vector.getBlockZ()));
         }
-		if(maxX > reach - 2 || maxY > reach - 2 || maxZ > reach - 2) {
-			return false;
-		}
+        if (maxX > reach - 2 || maxY > reach - 2 || maxZ > reach - 2) {
+            return false;
+        }
 
         for (Vector target : targets) {
             // coordinates of start and target point
@@ -181,84 +180,84 @@ public class OcclusionCullingInstance {
                 return true;
             }
         }
-		return false;
-	}
+        return false;
+    }
 
-	private boolean stepRay(Location start, double x0, double y0, double z0, int x, int y,
-			int z, double dt_dx, double dt_dy, double dt_dz, int n, int x_inc, int y_inc, int z_inc, double t_next_y,
-			double t_next_x, double t_next_z) {
-		int chunkX = 0;//(int) Math.floor(x / 16d);
-		int chunkZ = 0;//(int) Math.floor(z / 16d);
-		String worldName = start.getWorld().getName();
-		ChunkCoords cc = null;
-		ChunkSnapshot snapshot = null;
-		
-		// iterate through all intersecting cells (n times)
-		for (; n > 0; n--) {
-			int cx = (int) Math.floor((x0 - x) + reach);
-			int cy = (int) Math.floor((y0 - y) + reach);
-			int cz = (int) Math.floor((z0 - z) + reach);
-			//cx += reach;
-			//cy += reach;
-			//cz += reach;
-			if(cx < 0 || cy < 0 || cz < 0 || cx+1 > reach*2 || cy+1 > reach*2 || cz+1 > reach*2) {
-				System.out.println("wrong data! " + cx + " " + cy + " " + cz);
-				return false;
-			}
-			int key = cx + cy*(reach*2) + cz*(reach*2)*(reach*2);
-			byte cVal = cache[key];
-			if(cVal == 2) {
-				return false;
-			}
-			if(cVal == 0) {
-				// save current cell
-				Vector cp = new Vector(x, y, z);
-				chunkX = (int) Math.floor(x / 16d);
-				chunkZ = (int) Math.floor(z / 16d);
-				if(cc == null || cc.chunkX != chunkX || cc.chunkZ != chunkZ) {
-					cc = new ChunkCoords(worldName, chunkX, chunkZ);
-					snapshot = this.blockChangeListener.cachedChunkSnapshots.get(cc);
-					if(snapshot == null) {
-						//cache[cx][cy][cz] = 2;
-						return false;
-					}
-				}
-				
-				int relativeX = x % 16;
-				if (relativeX < 0) {
-					relativeX = 16 + relativeX;
-				}
-				int relativeZ = z % 16;
-				if (relativeZ < 0) {
-					relativeZ = 16 + relativeZ;
-				}
+    private boolean stepRay(Location start, double x0, double y0, double z0, int x, int y,
+                            int z, double dt_dx, double dt_dy, double dt_dz, int n, int x_inc, int y_inc, int z_inc, double t_next_y,
+                            double t_next_x, double t_next_z) {
+        int chunkX = 0;//(int) Math.floor(x / 16d);
+        int chunkZ = 0;//(int) Math.floor(z / 16d);
+        String worldName = start.getWorld().getName();
+        ChunkCoords cc = null;
+        ChunkSnapshot snapshot = null;
+
+        // iterate through all intersecting cells (n times)
+        for (; n > 0; n--) {
+            int cx = (int) Math.floor((x0 - x) + reach);
+            int cy = (int) Math.floor((y0 - y) + reach);
+            int cz = (int) Math.floor((z0 - z) + reach);
+            //cx += reach;
+            //cy += reach;
+            //cz += reach;
+            if (cx < 0 || cy < 0 || cz < 0 || cx + 1 > reach * 2 || cy + 1 > reach * 2 || cz + 1 > reach * 2) {
+                System.out.println("wrong data! " + cx + " " + cy + " " + cz);
+                return false;
+            }
+            int key = cx + cy * (reach * 2) + cz * (reach * 2) * (reach * 2);
+            byte cVal = cache[key];
+            if (cVal == 2) {
+                return false;
+            }
+            if (cVal == 0) {
+                // save current cell
+                Vector cp = new Vector(x, y, z);
+                chunkX = (int) Math.floor(x / 16d);
+                chunkZ = (int) Math.floor(z / 16d);
+                if (cc == null || cc.chunkX != chunkX || cc.chunkZ != chunkZ) {
+                    cc = new ChunkCoords(worldName, chunkX, chunkZ);
+                    snapshot = this.blockChangeListener.cachedChunkSnapshots.get(cc);
+                    if (snapshot == null) {
+                        //cache[cx][cy][cz] = 2;
+                        return false;
+                    }
+                }
+
+                int relativeX = x % 16;
+                if (relativeX < 0) {
+                    relativeX = 16 + relativeX;
+                }
+                int relativeZ = z % 16;
+                if (relativeZ < 0) {
+                    relativeZ = 16 + relativeZ;
+                }
                 if (y < 0 || y > 255) {
-					this.cache[key] = 2;
-					return false;
-				}
-				Material material = snapshot.getBlockType(relativeX, cp.getBlockY(), relativeZ);
-				if(material.isOccluding() && material != Material.SPAWNER) {
-					//System.out.println(cx + " " + cy + " " + cz);
-					this.cache[key] = 2;
-					return false;
-				}
-				this.cache[key] = 1;
-			}
+                    this.cache[key] = 2;
+                    return false;
+                }
+                Material material = snapshot.getBlockType(relativeX, cp.getBlockY(), relativeZ);
+                if (material.isOccluding() && material != Material.SPAWNER) {
+                    //System.out.println(cx + " " + cy + " " + cz);
+                    this.cache[key] = 2;
+                    return false;
+                }
+                this.cache[key] = 1;
+            }
 
-			if (t_next_y < t_next_x && t_next_y < t_next_z) { // next cell is upwards/downwards because the distance to the next vertical
-				// intersection point is smaller than to the next horizontal intersection point
-				y += y_inc; // move up/down
-				t_next_y += dt_dy; // update next vertical intersection point
-			} else if (t_next_x < t_next_y && t_next_x < t_next_z) { // next cell is right/left
-				x += x_inc; // move right/left
-				t_next_x += dt_dx; // update next horizontal intersection point
-			} else {
-				z += z_inc; // move right/left
-				t_next_z += dt_dz; // update next horizontal intersection point
-			}
+            if (t_next_y < t_next_x && t_next_y < t_next_z) { // next cell is upwards/downwards because the distance to the next vertical
+                // intersection point is smaller than to the next horizontal intersection point
+                y += y_inc; // move up/down
+                t_next_y += dt_dy; // update next vertical intersection point
+            } else if (t_next_x < t_next_y && t_next_x < t_next_z) { // next cell is right/left
+                x += x_inc; // move right/left
+                t_next_x += dt_dx; // update next horizontal intersection point
+            } else {
+                z += z_inc; // move right/left
+                t_next_z += dt_dz; // update next horizontal intersection point
+            }
 
-		}
-		return true;
-	}
+        }
+        return true;
+    }
 
 }
