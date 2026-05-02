@@ -73,7 +73,7 @@ public class CullTask implements Runnable {
                                     player.sendBlockChange(block.getLocation(), block.getBlockData());
                                 } else if (!hidden && !canSee) {
                                     this.cache.setHidden(player, block.getLocation(), true);
-                                    player.sendBlockChange(block.getLocation(), Material.BARRIER, (byte) 0);
+                                    player.sendBlockChange(block.getLocation(), Material.BARRIER.createBlockData());
                                 }
                             }
                         }
