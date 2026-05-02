@@ -35,13 +35,19 @@ public class BlockChangeListener implements Listener {
 	public final Map<ChunkCoords, ChunkSnapshot> cachedChunkSnapshots = new ConcurrentHashMap<>();
 	public final Map<ChunkCoords, BlockState[]> cachedChunkTiles = new ConcurrentHashMap<>();
 	public final Map<ChunkCoords, Entity[]> cachedChunkEntities = new ConcurrentHashMap<>();
+	private final CullingPlugin plugin;
 
-	public BlockChangeListener() {
-		for (World world : Bukkit.getWorlds()) {
-			for (Chunk chunk : world.getLoadedChunks()) {
-				handleChunkLoadSync(chunk);
+
+	public BlockChangeListener(CullingPlugin plugin) {
+		this.plugin = plugin;
+		//Delay 1 tick to account for plugins such as multiverse
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			for (World world : Bukkit.getWorlds()) {
+				for (Chunk chunk : world.getLoadedChunks()) {
+					handleChunkLoadSync(chunk);
+				}
 			}
-		}
+		});
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -102,15 +108,15 @@ public class BlockChangeListener implements Listener {
 
 	public void updateCachedChunkSync(final ChunkCoords cc, final Chunk chunk) {
 		if (chunk == null) {
-			cachedChunkSnapshots.remove(cc);
-			cachedChunkTiles.remove(cc);
-			cachedChunkEntities.remove(cc);
+			this.cachedChunkSnapshots.remove(cc);
+			this.cachedChunkTiles.remove(cc);
+			this.cachedChunkEntities.remove(cc);
 			return;
 		}
-		CullingPlugin.runTask(() -> {
-			cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
-			cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
-			cachedChunkEntities.put(cc, chunk.getEntities());
+		this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+			this.cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
+			this.cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
+			this.cachedChunkEntities.put(cc, chunk.getEntities());
 		});
 	}
 
@@ -134,7 +140,7 @@ public class BlockChangeListener implements Listener {
 			this.cachedChunkEntities.remove(cc);
 			return;
 		}
-		CullingPlugin.runTask(() -> {
+		this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
 			this.cachedChunkEntities.put(cc, chunk.getEntities());
 		});
 	}

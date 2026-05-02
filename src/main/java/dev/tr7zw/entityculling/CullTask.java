@@ -8,6 +8,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDe
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
 
+import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -39,11 +40,14 @@ public class CullTask implements Runnable {
 			1d
 	);
 
-	private final CullingPlugin instance;
-	private final OcclusionCullingInstance culling = new OcclusionCullingInstance();
+	private final BlockChangeListener blockChangeListener;
+	private final PlayerCache cache;
+	private final OcclusionCullingInstance culling;
 
-	public CullTask(CullingPlugin pl) {
-		this.instance = pl;
+	public CullTask(BlockChangeListener blockChangeListener, PlayerCache cache) {
+		this.blockChangeListener = blockChangeListener;
+		this.cache = cache;
+		this.culling  = new OcclusionCullingInstance(blockChangeListener);
 	}
 
 	@Override
@@ -53,28 +57,28 @@ public class CullTask implements Runnable {
 			for (int x = -3; x <= 3; x++) {
 				for (int y = -3; y <= 3; y++) {
 					Location loc = player.getLocation().add(x * 16, 0, y * 16);
-					ChunkCoords coords = this.instance.blockChangeListener.getChunkCoords(loc);
-					if (this.instance.blockChangeListener.isInLoadedChunk(coords)) {
+					ChunkCoords coords = this.blockChangeListener.getChunkCoords(loc);
+					if (this.blockChangeListener.isInLoadedChunk(coords)) {
 						// --- Block culling ---
-						BlockState[] tiles = this.instance.blockChangeListener.getChunkTiles(coords);
+						BlockState[] tiles = this.blockChangeListener.getChunkTiles(coords);
 						if (tiles != null) {
 							for (BlockState block : tiles) {
 								boolean canSee = this.culling.isBoundingBoxVisible(block.getLocation(), BLOCK_AABB,
 										player.getEyeLocation(), false);
-								boolean hidden = this.instance.cache.isHidden(player, block.getLocation());
+								boolean hidden = this.cache.isHidden(player, block.getLocation());
 
 								if (hidden && canSee) {
-									this.instance.cache.setHidden(player, block.getLocation(), false);
+									this.cache.setHidden(player, block.getLocation(), false);
 									player.sendBlockChange(block.getLocation(), block.getBlockData());
 								} else if (!hidden && !canSee) {
-									this.instance.cache.setHidden(player, block.getLocation(), true);
+									this.cache.setHidden(player, block.getLocation(), true);
 									player.sendBlockChange(block.getLocation(), Material.BARRIER, (byte) 0);
 								}
 							}
 						}
 
 						// --- Entity culling ---
-						Entity[] entities = this.instance.blockChangeListener.getChunkEntities(coords);
+						Entity[] entities = this.blockChangeListener.getChunkEntities(coords);
 						if (entities != null) {
 							for (Entity entity : entities) {
 								boolean isClose = player.getLocation().distance(entity.getLocation()) <= 16.0;
@@ -85,9 +89,9 @@ public class CullTask implements Runnable {
 										true
 								);
 								boolean canSee = isClose || isAABVisible;
-								boolean hidden = this.instance.cache.isEntityHidden(player, entity.getEntityId());
+								boolean hidden = this.cache.isEntityHidden(player, entity.getEntityId());
 								if (hidden && canSee) {
-									this.instance.cache.setHidden(player, entity, false);
+									this.cache.setHidden(player, entity, false);
 									if (!(entity instanceof Player) && entity.isValid()) {
 										sendSpawnPacket(player, entity);
 									}
@@ -95,7 +99,7 @@ public class CullTask implements Runnable {
 									if (!(entity instanceof Player)
 											&& !(entity instanceof ExperienceOrb)
 											&& !(entity instanceof Painting)) {
-										this.instance.cache.setHidden(player, entity, true);
+										this.cache.setHidden(player, entity, true);
 										sendDestroyPacket(player, entity);
 									}
 								}

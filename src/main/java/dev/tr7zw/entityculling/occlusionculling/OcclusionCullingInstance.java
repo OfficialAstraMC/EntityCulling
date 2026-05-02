@@ -8,12 +8,17 @@ import org.bukkit.Material;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
-import dev.tr7zw.entityculling.CullingPlugin;
 import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener.ChunkCoords;
 
 public class OcclusionCullingInstance {
 
-	private Vector getBoundingBoxMiddle(BoundingBox bb, Location blockLoc) {
+	private final BlockChangeListener blockChangeListener;
+
+    public OcclusionCullingInstance(BlockChangeListener blockChangeListener) {
+        this.blockChangeListener = blockChangeListener;
+    }
+
+    private Vector getBoundingBoxMiddle(BoundingBox bb, Location blockLoc) {
 		return new Vector(
 				bb.getMinX() + (bb.getMaxX() - bb.getMinX()) / 2d,
 				bb.getMinY() + (bb.getMaxY() - bb.getMinY()) / 2d,
@@ -212,7 +217,7 @@ public class OcclusionCullingInstance {
 				chunkZ = (int) Math.floor(z / 16d);
 				if(cc == null || cc.chunkX != chunkX || cc.chunkZ != chunkZ) {
 					cc = new ChunkCoords(worldName, chunkX, chunkZ);
-					snapshot = CullingPlugin.INSTANCE.blockChangeListener.cachedChunkSnapshots.get(cc);
+					snapshot = this.blockChangeListener.cachedChunkSnapshots.get(cc);
 					if(snapshot == null) {
 						//cache[cx][cy][cz] = 2;
 						return false;
