@@ -46,18 +46,12 @@ public class PlayerCache implements Listener {
 
     public boolean isHidden(Player player, Location loc) {
         Set<Location> blocks = this.hiddenBlocks.get(player.getUniqueId());
-        if (blocks == null) {
-            return false;
-        }
-        return blocks.contains(loc);
+        return blocks != null && blocks.contains(loc);
     }
 
     public boolean isEntityHidden(Player player, int entityId) {
         Set<Integer> ids = this.hiddenEntitiesID.get(player.getUniqueId());
-        if (ids == null) {
-            return false;
-        }
-        return ids.contains(entityId);
+        return ids != null && ids.contains(entityId);
     }
 
     @EventHandler
@@ -78,10 +72,11 @@ public class PlayerCache implements Listener {
     public void onUnload(PlayerChunkUnloadEvent event) {
 		UUID uuid = event.getPlayer().getUniqueId();
         Set<Integer> entities = this.hiddenEntitiesID.get(uuid);
-        if (entities != null) {
-            Arrays.stream(event.getChunk().getEntities())
-                    .map(Entity::getEntityId).toList()
-                    .forEach(entities::remove);
+        if (entities == null) {
+           return;
         }
+		Arrays.stream(event.getChunk().getEntities())
+				.map(Entity::getEntityId).toList()
+				.forEach(entities::remove);
     }
 }
