@@ -100,7 +100,6 @@ public class AxisAlignedBB {
 
 	@Override
 	public String toString() {
-		return minx + ":" + miny + ":" + minz + "_" + maxx + ":" + maxy + ":" + maxz;
+		return this.minx + ":" + this.miny + ":" + this.minz + "_" + this.maxx + ":" + this.maxy + ":" + this.maxz;
 	}
-
 }

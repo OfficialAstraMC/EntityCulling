@@ -43,8 +43,8 @@ public class OcclusionCullingInstance {
 
 			return false;
 
-		} catch (Exception exception) {
-			exception.printStackTrace();
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 		return true;
 	}
@@ -203,7 +203,7 @@ public class OcclusionCullingInstance {
 				chunkZ = (int) Math.floor(z / 16d);
 				if(cc == null || cc.chunkX != chunkX || cc.chunkZ != chunkZ) {
 					cc = new ChunkCoords(worldName, chunkX, chunkZ);
-					snapshot = CullingPlugin.instance.blockChangeListener.cachedChunkSnapshots.get(cc);
+					snapshot = CullingPlugin.INSTANCE.blockChangeListener.cachedChunkSnapshots.get(cc);
 					if(snapshot == null) {
 						//cache[cx][cy][cz] = 2;
 						return false;
@@ -218,25 +218,17 @@ public class OcclusionCullingInstance {
 				if (relativeZ < 0) {
 					relativeZ = 16 + relativeZ;
 				}
-				if (relativeX < 0 || relativeX > 15) {
-					cache[key] = 2;
-					return false;
-				}
-				if (relativeZ < 0 || relativeZ > 15) {
-					cache[key] = 2;
-					return false;
-				}
-				if (y < 0 || y > 255) {
-					cache[key] = 2;
+                if (y < 0 || y > 255) {
+					this.cache[key] = 2;
 					return false;
 				}
 				Material material = snapshot.getBlockType(relativeX, cp.getBlockY(), relativeZ);
 				if(material.isOccluding() && material != Material.SPAWNER) {
 					//System.out.println(cx + " " + cy + " " + cz);
-					cache[key] = 2;
+					this.cache[key] = 2;
 					return false;
 				}
-				cache[key] = 1;
+				this.cache[key] = 1;
 			}
 
 			if (t_next_y < t_next_x && t_next_y < t_next_z) { // next cell is upwards/downwards because the distance to the next vertical

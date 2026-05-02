@@ -2,7 +2,6 @@ package dev.tr7zw.entityculling.occlusionculling;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,9 +41,9 @@ import dev.tr7zw.entityculling.CullingPlugin;
 
 public class BlockChangeListener implements Listener {
 
-	public final Map<ChunkCoords, ChunkSnapshot> cachedChunkSnapshots = new HashMap<ChunkCoords, ChunkSnapshot>();
-	public final Map<ChunkCoords, BlockState[]> cachedChunkTiles = new HashMap<ChunkCoords, BlockState[]>();
-	public final Map<ChunkCoords, Entity[]> cachedChunkEntities = new HashMap<ChunkCoords, Entity[]>();
+	public final Map<ChunkCoords, ChunkSnapshot> cachedChunkSnapshots = new HashMap<>();
+	public final Map<ChunkCoords, BlockState[]> cachedChunkTiles = new HashMap<>();
+	public final Map<ChunkCoords, Entity[]> cachedChunkEntities = new HashMap<>();
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private final WriteLock writeLock = lock.writeLock();
 	private final ReadLock readLock = lock.readLock();
@@ -126,20 +125,16 @@ public class BlockChangeListener implements Listener {
 				writeLock.unlock();
 			}
 		}
-		CullingPlugin.runTask(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					writeLock.lock();
-					cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
-					cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
-					cachedChunkEntities.put(cc, chunk.getEntities());
-				} finally {
-					writeLock.unlock();
-				}
-			}
-		});
+		CullingPlugin.runTask(() -> {
+            try {
+                writeLock.lock();
+                cachedChunkSnapshots.put(cc, chunk.getChunkSnapshot());
+                cachedChunkTiles.put(cc, filterTiles(chunk.getTileEntities()));
+                cachedChunkEntities.put(cc, chunk.getEntities());
+            } finally {
+                writeLock.unlock();
+            }
+        });
 	}
 
 	private BlockState[] filterTiles(BlockState[] tiles) {
@@ -169,35 +164,14 @@ public class BlockChangeListener implements Listener {
 				writeLock.unlock();
 			}
 		}
-		CullingPlugin.runTask(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					writeLock.lock();
-					cachedChunkEntities.put(cc, chunk.getEntities());
-				} finally {
-					writeLock.unlock();
-				}
-			}
-		});
-	}
-
-	public void updateCachedChunkEntitiesSync(final Set<ChunkCoords> chunks) {
-		CullingPlugin.runTask(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					writeLock.lock();
-					for (ChunkCoords cc : chunks) {
-						cachedChunkEntities.put(cc, cc.getRealChunkSync().getEntities());
-					}
-				} finally {
-					writeLock.unlock();
-				}
-			}
-		});
+		CullingPlugin.runTask(() -> {
+            try {
+                writeLock.lock();
+                cachedChunkEntities.put(cc, chunk.getEntities());
+            } finally {
+                writeLock.unlock();
+            }
+        });
 	}
 
 	public ChunkCoords getChunkCoords(Location loc) {

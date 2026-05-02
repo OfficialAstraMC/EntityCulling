@@ -49,7 +49,7 @@ public class OcclusionCullingUtils {
 		return true;
 	}
 	
-	private static byte[] cache = new byte[40000];
+	private static final byte[] VISIBLE_CACHE = new byte[40000];
 	
 	/**
 	 * returns the grid cells that intersect with this vector<br>
@@ -66,8 +66,10 @@ public class OcclusionCullingUtils {
 			maxZ = Math.max(maxZ, Math.abs(targets[i].getBlockZ()));
 		}
 		int size = (maxX+1) * (maxY+1) * (maxZ+1);
-		if(size > 40000)return false;
-		Arrays.fill(cache, (byte)0);
+		if(size > 40000) {
+			return false;
+		}
+		Arrays.fill(VISIBLE_CACHE, (byte)0);
 		
 		for(int v = 0; v < targets.length; v++) {
 			Vector target = targets[v];
@@ -158,7 +160,7 @@ public class OcclusionCullingUtils {
 																	// the first cell
 			}
 	
-			boolean finished =stepRay(start, cache, maxX, maxY, maxZ, x0, y0, z0, x, y, z, dt_dx, dt_dy, dt_dz, n, x_inc, y_inc, z_inc, t_next_y, t_next_x,
+			boolean finished =stepRay(start, maxX, maxY, maxZ, x0, y0, z0, x, y, z, dt_dx, dt_dy, dt_dz, n, x_inc, y_inc, z_inc, t_next_y, t_next_x,
 					t_next_z);
 			if(finished) {
 				return true;
@@ -167,14 +169,22 @@ public class OcclusionCullingUtils {
 		return false;
 	}
 
-	private static boolean stepRay(Location start, byte[] cache, int maxX, int maxY, int maxZ, double x0, double y0, double z0, int x, int y,
-			int z, double dt_dx, double dt_dy, double dt_dz, int n, int x_inc, int y_inc, int z_inc, double t_next_y,
+	private static boolean stepRay(Location start,
+	                               int maxX, int maxY,
+								   int maxZ, double x0,
+								   double y0, double z0,
+								   int x, int y,
+								   int z, double dt_dx,
+								   double dt_dy, double dt_dz,
+								   int n, int x_inc,
+								   int y_inc, int z_inc,
+								   double t_next_y,
 			double t_next_x, double t_next_z) {
 		int chunkX = (int) Math.floor(x / 16d);
 		int chunkZ = (int) Math.floor(z / 16d);
 		String worldName = start.getWorld().getName();
 		ChunkCoords cc = new ChunkCoords(worldName, chunkX, chunkZ);
-		ChunkSnapshot snapshot = CullingPlugin.instance.blockChangeListener.cachedChunkSnapshots.get(cc);
+		ChunkSnapshot snapshot = CullingPlugin.INSTANCE.blockChangeListener.cachedChunkSnapshots.get(cc);
 		
 		if(snapshot == null)return false;
 		
@@ -184,7 +194,7 @@ public class OcclusionCullingUtils {
 			int cy = (int) Math.abs(y0 - y);
 			int cz = (int) Math.abs(z0 - z);
 			int key = cx + cy*maxX + cz*maxX*maxY;
-			byte cVal = cache[key];
+			byte cVal = OcclusionCullingUtils.VISIBLE_CACHE[key];
 			if(cVal == 2) {
 				return false;
 			}
@@ -195,7 +205,7 @@ public class OcclusionCullingUtils {
 				chunkZ = (int) Math.floor(z / 16d);
 				if(cc.chunkX != chunkX || cc.chunkZ != chunkZ) {
 					cc = new ChunkCoords(worldName, chunkX, chunkZ);
-					snapshot = CullingPlugin.instance.blockChangeListener.cachedChunkSnapshots.get(cc);
+					snapshot = CullingPlugin.INSTANCE.blockChangeListener.cachedChunkSnapshots.get(cc);
 					if(snapshot == null) {
 						//cache[cx][cy][cz] = 2;
 						return false;
@@ -210,25 +220,17 @@ public class OcclusionCullingUtils {
 				if (relativeZ < 0) {
 					relativeZ = 16 + relativeZ;
 				}
-				if (relativeX < 0 || relativeX > 15) {
-					cache[key] = 2;
-					return false;
-				}
-				if (relativeZ < 0 || relativeZ > 15) {
-					cache[key] = 2;
-					return false;
-				}
-				if (y < 0 || y > 255) {
-					cache[key] = 2;
+                if (y < 0 || y > 255) {
+					OcclusionCullingUtils.VISIBLE_CACHE[key] = 2;
 					return false;
 				}
 				Material material = snapshot.getBlockType(relativeX, cp.getBlockY(), relativeZ);
 				if(material.isOccluding() && material != Material.SPAWNER) {
 					//System.out.println(cx + " " + cy + " " + cz);
-					cache[key] = 2;
+					OcclusionCullingUtils.VISIBLE_CACHE[key] = 2;
 					return false;
 				}
-				cache[key] = 1;
+				OcclusionCullingUtils.VISIBLE_CACHE[key] = 1;
 			}
 
 			if (t_next_y < t_next_x && t_next_y < t_next_z) { // next cell is upwards/downwards because the distance to the next vertical
