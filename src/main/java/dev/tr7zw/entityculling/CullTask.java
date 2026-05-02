@@ -76,7 +76,14 @@ public class CullTask implements Runnable {
 						Entity[] entities = this.instance.blockChangeListener.getChunkEntities(coords);
 						if (entities != null) {
 							for (Entity entity : entities) {
-								boolean canSee = this.culling.isAABBVisible(entity.getLocation(), ENTITY_AABB, player.getEyeLocation(), true);
+								boolean isClose = player.getLocation().distance(entity.getLocation()) <= 16.0;
+								boolean isAABVisible = this.culling.isAABBVisible(
+										entity.getLocation(),
+										ENTITY_AABB,
+										player.getEyeLocation(),
+										true
+								);
+								boolean canSee = isClose || isAABVisible;
 								boolean hidden = this.instance.cache.isEntityHidden(player, entity.getEntityId());
 								if (hidden && canSee) {
 									this.instance.cache.setHidden(player, entity, false);
@@ -84,7 +91,6 @@ public class CullTask implements Runnable {
 										sendSpawnPacket(player, entity);
 									}
 								} else if (!hidden && !canSee) {
-									// Hide: send destroy packet
 									if (!(entity instanceof Player)
 											&& !(entity instanceof ExperienceOrb)
 											&& !(entity instanceof Painting)) {
