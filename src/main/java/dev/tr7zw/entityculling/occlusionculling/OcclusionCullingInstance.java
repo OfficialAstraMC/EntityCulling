@@ -49,13 +49,9 @@ public class OcclusionCullingInstance {
 			}else {
 				targets[3] = centerZMax.subtract(playerLoc).toVector();
 			}
-			if (isVisible(playerLoc, targets)) {
-				return true;
-			}
+            return isVisible(playerLoc, targets);
 
-			return false;
-
-		} catch (Exception ex) {
+        } catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		return true;
@@ -77,108 +73,109 @@ public class OcclusionCullingInstance {
 		int maxX = 0;
 		int maxY = 0;
 		int maxZ = 0;
-		for(int i = 0; i < targets.length; i++) {
-			maxX = Math.max(maxX, Math.abs(targets[i].getBlockX()));
-			maxY = Math.max(maxY, Math.abs(targets[i].getBlockY()));
-			maxZ = Math.max(maxZ, Math.abs(targets[i].getBlockZ()));
+        for (Vector vector : targets) {
+            maxX = Math.max(maxX, Math.abs(vector.getBlockX()));
+            maxY = Math.max(maxY, Math.abs(vector.getBlockY()));
+            maxZ = Math.max(maxZ, Math.abs(vector.getBlockZ()));
+        }
+		if(maxX > reach - 2 || maxY > reach - 2 || maxZ > reach - 2) {
+			return false;
 		}
-		if(maxX > reach - 2 || maxY > reach - 2 || maxZ > reach - 2)return false;
-		
-		for(int v = 0; v < targets.length; v++) {
-			Vector target = targets[v];
-			// coordinates of start and target point
-			double x0 = start.getX();
-			double y0 = start.getY();
-			double z0 = start.getZ();
-			double x1 = x0 + target.getX();
-			double y1 = y0 + target.getY();
-			double z1 = z0 + target.getZ();
-	
-			// horizontal and vertical cell amount spanned
-			double dx = Math.abs(x1 - x0);
-			double dy = Math.abs(y1 - y0);
-			double dz = Math.abs(z1 - z0);
-	
-			// start cell coordinate
-			int x = (int) Math.floor(x0);
-			int y = (int) Math.floor(y0);
-			int z = (int) Math.floor(z0);
-	
-			// distance between horizontal intersection points with cell border as a
-			// fraction of the total vector length
-			double dt_dx = 1f / dx;
-			// distance between vertical intersection points with cell border as a fraction
-			// of the total vector length
-			double dt_dy = 1f / dy;
-			double dt_dz = 1f / dz;
-	
-			// total amount of intersected cells
-			int n = 1;
-	
-			// 1, 0 or -1
-			// determines the direction of the next cell (horizontally / vertically)
-			int x_inc, y_inc, z_inc;
-			// the distance to the next horizontal / vertical intersection point with a cell
-			// border as a fraction of the total vector length
-			double t_next_y, t_next_x, t_next_z;
-	
-			if (dx == 0f) {
-				x_inc = 0;
-				t_next_x = dt_dx; // don't increment horizontally because the vector is perfectly vertical
-			} else if (x1 > x0) {
-				x_inc = 1; // target point is horizontally greater than starting point so increment every
-							// step by 1
-				n += (int) Math.floor(x1) - x; // increment total amount of intersecting cells
-				t_next_x = (float) ((Math.floor(x0) + 1 - x0) * dt_dx); // calculate the next horizontal intersection point based on the position inside
-																		// the first cell
-			} else {
-				x_inc = -1; // target point is horizontally smaller than starting point so reduce every step
-							// by 1
-				n += x - (int) Math.floor(x1); // increment total amount of intersecting cells
-				t_next_x = (float) ((x0 - Math.floor(x0)) * dt_dx); // calculate the next horizontal intersection point based on the position inside
-																	// the first cell
-			}
-	
-			if (dy == 0f) {
-				y_inc = 0;
-				t_next_y = dt_dy; // don't increment vertically because the vector is perfectly horizontal
-			} else if (y1 > y0) {
-				y_inc = 1; // target point is vertically greater than starting point so increment every
-							// step by 1
-				n += (int) Math.floor(y1) - y; // increment total amount of intersecting cells
-				t_next_y = (float) ((Math.floor(y0) + 1 - y0) * dt_dy); // calculate the next vertical intersection point based on the position inside
-																		// the first cell
-			} else {
-				y_inc = -1; // target point is vertically smaller than starting point so reduce every step
-							// by 1
-				n += y - (int) Math.floor(y1); // increment total amount of intersecting cells
-				t_next_y = (float) ((y0 - Math.floor(y0)) * dt_dy); // calculate the next vertical intersection point based on the position inside
-																	// the first cell
-			}
-	
-			if (dz == 0f) {
-				z_inc = 0;
-				t_next_z = dt_dz; // don't increment vertically because the vector is perfectly horizontal
-			} else if (z1 > z0) {
-				z_inc = 1; // target point is vertically greater than starting point so increment every
-							// step by 1
-				n += (int) Math.floor(z1) - z; // increment total amount of intersecting cells
-				t_next_z = (float) ((Math.floor(z0) + 1 - z0) * dt_dz); // calculate the next vertical intersection point based on the position inside
-																		// the first cell
-			} else {
-				z_inc = -1; // target point is vertically smaller than starting point so reduce every step
-							// by 1
-				n += z - (int) Math.floor(z1); // increment total amount of intersecting cells
-				t_next_z = (float) ((z0 - Math.floor(z0)) * dt_dz); // calculate the next vertical intersection point based on the position inside
-																	// the first cell
-			}
-	
-			boolean finished =stepRay(start, x0, y0, z0, x, y, z, dt_dx, dt_dy, dt_dz, n, x_inc, y_inc, z_inc, t_next_y, t_next_x,
-					t_next_z);
-			if(finished) {
-				return true;
-			}
-		}
+
+        for (Vector target : targets) {
+            // coordinates of start and target point
+            double x0 = start.getX();
+            double y0 = start.getY();
+            double z0 = start.getZ();
+            double x1 = x0 + target.getX();
+            double y1 = y0 + target.getY();
+            double z1 = z0 + target.getZ();
+
+            // horizontal and vertical cell amount spanned
+            double dx = Math.abs(x1 - x0);
+            double dy = Math.abs(y1 - y0);
+            double dz = Math.abs(z1 - z0);
+
+            // start cell coordinate
+            int x = (int) Math.floor(x0);
+            int y = (int) Math.floor(y0);
+            int z = (int) Math.floor(z0);
+
+            // distance between horizontal intersection points with cell border as a
+            // fraction of the total vector length
+            double dt_dx = 1f / dx;
+            // distance between vertical intersection points with cell border as a fraction
+            // of the total vector length
+            double dt_dy = 1f / dy;
+            double dt_dz = 1f / dz;
+
+            // total amount of intersected cells
+            int n = 1;
+
+            // 1, 0 or -1
+            // determines the direction of the next cell (horizontally / vertically)
+            int x_inc, y_inc, z_inc;
+            // the distance to the next horizontal / vertical intersection point with a cell
+            // border as a fraction of the total vector length
+            double t_next_y, t_next_x, t_next_z;
+
+            if (dx == 0f) {
+                x_inc = 0;
+                t_next_x = dt_dx; // don't increment horizontally because the vector is perfectly vertical
+            } else if (x1 > x0) {
+                x_inc = 1; // target point is horizontally greater than starting point so increment every
+                // step by 1
+                n += (int) Math.floor(x1) - x; // increment total amount of intersecting cells
+                t_next_x = (float) ((Math.floor(x0) + 1 - x0) * dt_dx); // calculate the next horizontal intersection point based on the position inside
+                // the first cell
+            } else {
+                x_inc = -1; // target point is horizontally smaller than starting point so reduce every step
+                // by 1
+                n += x - (int) Math.floor(x1); // increment total amount of intersecting cells
+                t_next_x = (float) ((x0 - Math.floor(x0)) * dt_dx); // calculate the next horizontal intersection point based on the position inside
+                // the first cell
+            }
+
+            if (dy == 0f) {
+                y_inc = 0;
+                t_next_y = dt_dy; // don't increment vertically because the vector is perfectly horizontal
+            } else if (y1 > y0) {
+                y_inc = 1; // target point is vertically greater than starting point so increment every
+                // step by 1
+                n += (int) Math.floor(y1) - y; // increment total amount of intersecting cells
+                t_next_y = (float) ((Math.floor(y0) + 1 - y0) * dt_dy); // calculate the next vertical intersection point based on the position inside
+                // the first cell
+            } else {
+                y_inc = -1; // target point is vertically smaller than starting point so reduce every step
+                // by 1
+                n += y - (int) Math.floor(y1); // increment total amount of intersecting cells
+                t_next_y = (float) ((y0 - Math.floor(y0)) * dt_dy); // calculate the next vertical intersection point based on the position inside
+                // the first cell
+            }
+
+            if (dz == 0f) {
+                z_inc = 0;
+                t_next_z = dt_dz; // don't increment vertically because the vector is perfectly horizontal
+            } else if (z1 > z0) {
+                z_inc = 1; // target point is vertically greater than starting point so increment every
+                // step by 1
+                n += (int) Math.floor(z1) - z; // increment total amount of intersecting cells
+                t_next_z = (float) ((Math.floor(z0) + 1 - z0) * dt_dz); // calculate the next vertical intersection point based on the position inside
+                // the first cell
+            } else {
+                z_inc = -1; // target point is vertically smaller than starting point so reduce every step
+                // by 1
+                n += z - (int) Math.floor(z1); // increment total amount of intersecting cells
+                t_next_z = (float) ((z0 - Math.floor(z0)) * dt_dz); // calculate the next vertical intersection point based on the position inside
+                // the first cell
+            }
+
+            boolean finished = stepRay(start, x0, y0, z0, x, y, z, dt_dx, dt_dy, dt_dz, n, x_inc, y_inc, z_inc, t_next_y, t_next_x,
+                    t_next_z);
+            if (finished) {
+                return true;
+            }
+        }
 		return false;
 	}
 
