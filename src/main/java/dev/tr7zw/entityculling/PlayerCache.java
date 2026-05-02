@@ -12,15 +12,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerCache implements Listener {
 
-    private final Map<Player, Set<Location>> hiddenBlocks = new ConcurrentHashMap<>();
-    private final Map<Player, Set<Integer>> hiddenEntitiesID = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<Location>> hiddenBlocks = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<Integer>> hiddenEntitiesID = new ConcurrentHashMap<>();
 
     public void setHidden(Player player, Location loc, boolean hidden) {
-        Set<Location> blocks = this.hiddenBlocks.computeIfAbsent(player, p -> ConcurrentHashMap.newKeySet());
+        Set<Location> blocks = this.hiddenBlocks.computeIfAbsent(
+				player.getUniqueId(),
+				uuid -> ConcurrentHashMap.newKeySet()
+		);
         if (!hidden) {
             blocks.remove(loc);
         } else {
@@ -29,7 +33,10 @@ public class PlayerCache implements Listener {
     }
 
     public void setHidden(Player player, Entity entity, boolean hidden) {
-        Set<Integer> ids = this.hiddenEntitiesID.computeIfAbsent(player, p -> ConcurrentHashMap.newKeySet());
+        Set<Integer> ids = this.hiddenEntitiesID.computeIfAbsent(
+				player.getUniqueId(),
+				uuid -> ConcurrentHashMap.newKeySet()
+		);
         if (!hidden) {
             ids.remove(entity.getEntityId());
         } else {
@@ -38,7 +45,7 @@ public class PlayerCache implements Listener {
     }
 
     public boolean isHidden(Player player, Location loc) {
-        Set<Location> blocks = this.hiddenBlocks.get(player);
+        Set<Location> blocks = this.hiddenBlocks.get(player.getUniqueId());
         if (blocks == null) {
             return false;
         }
@@ -46,7 +53,7 @@ public class PlayerCache implements Listener {
     }
 
     public boolean isEntityHidden(Player player, int entityId) {
-        Set<Integer> ids = this.hiddenEntitiesID.get(player);
+        Set<Integer> ids = this.hiddenEntitiesID.get(player.getUniqueId());
         if (ids == null) {
             return false;
         }
@@ -55,8 +62,9 @@ public class PlayerCache implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        this.hiddenBlocks.remove(event.getPlayer());
-        this.hiddenEntitiesID.remove(event.getPlayer());
+		UUID uuid = event.getPlayer().getUniqueId();
+        this.hiddenBlocks.remove(uuid);
+        this.hiddenEntitiesID.remove(uuid);
     }
 
     @EventHandler
@@ -68,7 +76,8 @@ public class PlayerCache implements Listener {
 
     @EventHandler
     public void onUnload(PlayerChunkUnloadEvent event) {
-        Set<Integer> entities = this.hiddenEntitiesID.get(event.getPlayer());
+		UUID uuid = event.getPlayer().getUniqueId();
+        Set<Integer> entities = this.hiddenEntitiesID.get(uuid);
         if (entities != null) {
             Arrays.stream(event.getChunk().getEntities())
                     .map(Entity::getEntityId).toList()
