@@ -78,10 +78,9 @@ public class CullTask implements Runnable {
 							for (Entity entity : entities) {
 								boolean canSee = this.culling.isAABBVisible(entity.getLocation(), ENTITY_AABB, player.getEyeLocation(), true);
 								boolean hidden = this.instance.cache.isEntityHidden(player, entity.getEntityId());
-
 								if (hidden && canSee) {
 									this.instance.cache.setHidden(player, entity, false);
-									if (!(entity instanceof Player)) {
+									if (!(entity instanceof Player) && entity.isValid()) {
 										sendSpawnPacket(player, entity);
 									}
 								} else if (!hidden && !canSee) {
