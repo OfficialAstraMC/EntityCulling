@@ -5,20 +5,30 @@ import java.util.Arrays;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
-import dev.tr7zw.entityculling.AxisAlignedBB;
 import dev.tr7zw.entityculling.CullingPlugin;
 import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener.ChunkCoords;
 
 public class OcclusionCullingInstance {
 
-	public boolean isAABBVisible(Location aabbBlock, AxisAlignedBB aabb, Location playerLoc, boolean entity) {
+	private Vector getBoundingBoxMiddle(BoundingBox bb, Location blockLoc) {
+		return new Vector(
+				bb.getMinX() + (bb.getMaxX() - bb.getMinX()) / 2d,
+				bb.getMinY() + (bb.getMaxY() - bb.getMinY()) / 2d,
+				bb.getMinZ() + (bb.getMaxZ() - bb.getMinZ()) / 2d
+		).add(blockLoc.toVector());
+	}
+
+	public boolean isBoundingBoxVisible(Location bbLocation, BoundingBox bb, Location playerLoc, boolean entity) {
 		try {
-			double width = aabb.getWidth();
-			double height = aabb.getHeight();
-			double depth = aabb.getDepth();
-			Location center = entity ? aabbBlock.clone().add(0, height/2, 0) : aabb.getAABBMiddle(aabbBlock).toLocation(aabbBlock.getWorld());
+			double width = bb.getWidthX();
+			double height = bb.getHeight();
+			double depth = bb.getWidthZ();
+			Location center = entity
+					? bbLocation.clone().add(0, height/2, 0)
+					: this.getBoundingBoxMiddle(bb, bbLocation).toLocation(bbLocation.getWorld());
 			Location centerXMin = center.clone().add(-width / 2, 0, 0);
 			Location centerXMax = center.clone().add(width / 2, 0, 0);
 			Location centerYMin = center.clone().add(0, -height / 2, 0);
@@ -39,7 +49,9 @@ public class OcclusionCullingInstance {
 			}else {
 				targets[3] = centerZMax.subtract(playerLoc).toVector();
 			}
-			if(isVisible(playerLoc, targets))return true;
+			if (isVisible(playerLoc, targets)) {
+				return true;
+			}
 
 			return false;
 

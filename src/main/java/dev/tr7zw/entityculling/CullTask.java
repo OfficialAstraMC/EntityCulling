@@ -17,11 +17,12 @@ import org.bukkit.entity.*;
 
 import dev.tr7zw.entityculling.occlusionculling.OcclusionCullingInstance;
 import dev.tr7zw.entityculling.occlusionculling.BlockChangeListener.ChunkCoords;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 public class CullTask implements Runnable {
 
-	private static final AxisAlignedBB BLOCK_AABB = new AxisAlignedBB(
+	private static final BoundingBox BLOCK_AABB = new BoundingBox(
 			0d,
 			0d,
 			0d,
@@ -29,7 +30,7 @@ public class CullTask implements Runnable {
 			1d,
 			1d
 	);
-	private static final AxisAlignedBB ENTITY_AABB = new AxisAlignedBB(
+	private static final BoundingBox ENTITY_AABB = new BoundingBox(
 			0d,
 			0d,
 			0d,
@@ -58,7 +59,7 @@ public class CullTask implements Runnable {
 						BlockState[] tiles = this.instance.blockChangeListener.getChunkTiles(coords);
 						if (tiles != null) {
 							for (BlockState block : tiles) {
-								boolean canSee = this.culling.isAABBVisible(block.getLocation(), BLOCK_AABB,
+								boolean canSee = this.culling.isBoundingBoxVisible(block.getLocation(), BLOCK_AABB,
 										player.getEyeLocation(), false);
 								boolean hidden = this.instance.cache.isHidden(player, block.getLocation());
 
@@ -77,7 +78,7 @@ public class CullTask implements Runnable {
 						if (entities != null) {
 							for (Entity entity : entities) {
 								boolean isClose = player.getLocation().distance(entity.getLocation()) <= 16.0;
-								boolean isAABVisible = this.culling.isAABBVisible(
+								boolean isAABVisible = this.culling.isBoundingBoxVisible(
 										entity.getLocation(),
 										ENTITY_AABB,
 										player.getEyeLocation(),
