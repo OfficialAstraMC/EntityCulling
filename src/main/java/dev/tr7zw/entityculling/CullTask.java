@@ -15,10 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ExperienceOrb;
-import org.bukkit.entity.Painting;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
@@ -82,6 +79,9 @@ public class CullTask implements Runnable {
                         Entity[] entities = this.blockChangeListener.getChunkEntities(coords);
                         if (entities != null) {
                             for (Entity entity : entities) {
+                                if (this.shouldNotHide(entity)) {
+                                    continue;
+                                }
                                 boolean isClose = player.getLocation().distance(entity.getLocation()) <= 16.0;
                                 boolean isAABVisible = this.culling.isBoundingBoxVisible(
                                         entity.getLocation(),
@@ -97,12 +97,8 @@ public class CullTask implements Runnable {
                                         sendSpawnPacket(player, entity);
                                     }
                                 } else if (!hidden && !canSee) {
-                                    if (!(entity instanceof Player)
-                                            && !(entity instanceof ExperienceOrb)
-                                            && !(entity instanceof Painting)) {
-                                        this.cache.setHidden(player, entity, true);
-                                        sendDestroyPacket(player, entity);
-                                    }
+                                    this.cache.setHidden(player, entity, true);
+                                    sendDestroyPacket(player, entity);
                                 }
                             }
                         }
@@ -110,6 +106,12 @@ public class CullTask implements Runnable {
                 }
             }
         }
+    }
+
+    private boolean shouldNotHide(Entity entity) {
+        return entity instanceof Player
+                || entity instanceof ExperienceOrb
+                || entity instanceof Display;
     }
 
     private void sendDestroyPacket(Player player, Entity entity) {

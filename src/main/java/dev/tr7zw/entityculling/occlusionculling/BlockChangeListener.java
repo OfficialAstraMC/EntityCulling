@@ -114,11 +114,11 @@ public class BlockChangeListener implements Listener {
             return tiles;
         List<BlockState> list = new ArrayList<>(Arrays.asList(tiles)); // the arrays as list is not modifiable
         list.removeIf(state -> !(state instanceof Chest
-                || state instanceof Shulker
                 || state instanceof CreatureSpawner
                 || state instanceof EnchantingTable
                 || state instanceof Banner
-                || state instanceof Skull));
+                || state instanceof Skull
+        ));
         return list.toArray(new BlockState[0]);
     }
 
