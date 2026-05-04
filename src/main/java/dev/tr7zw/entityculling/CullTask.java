@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.TileState;
 import org.bukkit.entity.*;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -68,6 +69,9 @@ public class CullTask implements Runnable {
                                 if (hidden && canSee) {
                                     this.cache.setHidden(player, block.getLocation(), false);
                                     player.sendBlockChange(block.getLocation(), block.getBlockData());
+                                    if (block instanceof TileState tileState) {
+                                        player.sendBlockUpdate(block.getLocation(), tileState);
+                                    }
                                 } else if (!hidden && !canSee) {
                                     this.cache.setHidden(player, block.getLocation(), true);
                                     player.sendBlockChange(block.getLocation(), Material.BARRIER.createBlockData());
