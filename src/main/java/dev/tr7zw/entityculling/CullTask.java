@@ -61,20 +61,20 @@ public class CullTask implements Runnable {
                         // --- Block culling ---
                         BlockState[] tiles = this.blockChangeListener.getChunkTiles(coords);
                         if (tiles != null) {
-                            for (BlockState block : tiles) {
-                                boolean canSee = this.culling.isBoundingBoxVisible(block.getLocation(), BLOCK_AABB,
+                            for (BlockState blockState : tiles) {
+                                boolean canSee = this.culling.isBoundingBoxVisible(blockState.getLocation(), BLOCK_AABB,
                                         player.getEyeLocation(), false);
-                                boolean hidden = this.cache.isHidden(player, block.getLocation());
+                                boolean hidden = this.cache.isHidden(player, blockState.getLocation());
 
                                 if (hidden && canSee) {
-                                    this.cache.setHidden(player, block.getLocation(), false);
-                                    player.sendBlockChange(block.getLocation(), block.getBlockData());
-                                    if (block instanceof TileState tileState) {
-                                        player.sendBlockUpdate(block.getLocation(), tileState);
+                                    this.cache.setHidden(player, blockState.getLocation(), false);
+                                    player.sendBlockChange(blockState.getLocation(), blockState.getBlockData());
+                                    if (blockState instanceof TileState tileState) {
+                                        player.sendBlockUpdate(blockState.getLocation(), tileState);
                                     }
                                 } else if (!hidden && !canSee) {
-                                    this.cache.setHidden(player, block.getLocation(), true);
-                                    player.sendBlockChange(block.getLocation(), Material.BARRIER.createBlockData());
+                                    this.cache.setHidden(player, blockState.getLocation(), true);
+                                    player.sendBlockChange(blockState.getLocation(), Material.BARRIER.createBlockData());
                                 }
                             }
                         }
