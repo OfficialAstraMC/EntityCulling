@@ -115,7 +115,8 @@ public class CullTask implements Runnable {
     private boolean shouldNotHide(Entity entity) {
         return entity instanceof Player
                 || entity instanceof ExperienceOrb
-                || entity instanceof Display;
+                || entity instanceof Display
+                || entity instanceof Painting;
     }
 
     private void sendDestroyPacket(Player player, Entity entity) {
