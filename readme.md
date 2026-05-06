@@ -14,10 +14,6 @@ and then blocks packets for these entities. This results in the following:
 - Paper 1.21.4+
 - packetevents
 
-## Known issues
-
-- Itemframes are visually correct after respawning, but their hitbox is at the wrong location
-
 ## Credits
 
 [RoboTricker](https://github.com/robotricker/) created the original server side async raytracing occlusion culling
