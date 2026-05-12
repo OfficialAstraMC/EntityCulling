@@ -22,11 +22,15 @@ dependencies {
     compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
-tasks.withType<ProcessResources> {
-    filteringCharset = "UTF-8"
-    expand(project.properties)
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
+tasks {
+    processResources {
+        filesMatching("plugin.yml") {
+            expand("pluginVersion" to project.version)
+        }
+        filteringCharset = "UTF-8"
+        expand(project.properties)
+    }
+    compileJava {
+        options.encoding = "UTF-8"
+    }
 }
